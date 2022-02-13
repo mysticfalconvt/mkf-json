@@ -16,28 +16,22 @@ function formatEvent(event) {
 }
 //  function to create an array of events from an object formated with date and sorted by date
 function createEventArrayFromObject(obj, isSlate = false) {
-    return Object.entries(obj).map(event => {
-        return {
-            event: formatEvent(event[1]),
-            isSlate,
-        }
-    });
-
+    return Object.entries(obj).map(event => ({ event: formatEvent(event[1]), isSlate }));
 }
 
 function sortArrayByDate(array) {
     return [...array].sort((a, b) => {
-        const aDate = new Date(a.event.date);
-        const bDate = new Date(b.event.date);
+        const aDate = a.event.date;
+        const bDate = b.event.date;
         return aDate.getTime() - bDate.getTime();
     });
 }
 
 function getIsDuplicateEvent(currentEvent, previousEvent) {
     const currentDate = String(currentEvent.date);
-    const currentTeams = String(currentEvent.teams);
+    const currentTeams = currentEvent.teams;
     const previousDate = String(previousEvent.date || previousEvent[0]?.date);
-    const previousTeams = String(previousEvent.teams || previousEvent[0]?.teams);
+    const previousTeams = previousEvent.teams || previousEvent[0]?.teams;
     const isDuplicateEvent = currentDate === previousDate && currentTeams === previousTeams;
     return isDuplicateEvent;
 }
@@ -51,30 +45,26 @@ function combineEventsRemovingDuplicates(events) {
         // if first event, add it to the array
         if (!previousEvent) {
             mergedEvents.push({ event: currentEvent, isSlate, isStacked: false, sp: "LOL" });
-        } else {
-
-            const isDuplicateEvent = getIsDuplicateEvent(currentEvent, previousEvent);
-
-            // if event is new then add it to the array
-            if (!isDuplicateEvent) {
-                mergedEvents.push({ event: currentEvent, isSlate, isStacked: false, sp: "LOL" });
-            } else {
-
-                // if it is a duplicate event add it to event array and set isStacked to true
-                if (isDuplicateEvent) {
-                    const oldEvent = mergedEvents.pop();
-                    if (oldEvent.isStacked) {
-                        oldEvent.event = [...oldEvent.event, currentEvent];
-                    } else {
-                        oldEvent.event = [oldEvent.event, currentEvent];
-                    }
-                    oldEvent.isSlate = oldEvent.isSlate || isSlate;
-                    oldEvent.isStacked = true;
-                    mergedEvents.push(oldEvent);
-                };
-
-            }
+            return;
         }
+
+        const isDuplicateEvent = getIsDuplicateEvent(currentEvent, previousEvent);
+
+        // if event is new then add it to the array
+        if (!isDuplicateEvent) {
+            mergedEvents.push({ event: currentEvent, isSlate, isStacked: false, sp: "LOL" });
+            return;
+        }
+
+        // if it is a duplicate event add it to event array and set isStacked to true
+        if (isDuplicateEvent) {
+            const oldEvent = mergedEvents.pop();
+            const oldEvents = (oldEvent.isStacked) ? [...oldEvent.event] : [oldEvent.event];
+            oldEvent.event = [...oldEvents, currentEvent];
+            oldEvent.isSlate = oldEvent.isSlate || isSlate;
+            oldEvent.isStacked = true;
+            mergedEvents.push(oldEvent);
+        };
 
     });
 
